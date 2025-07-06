@@ -6,8 +6,9 @@
 - **Database**: PostgreSQL + Prisma
 - **Auth**: JWT
 
-1. Install dependencies:
 ```bash
+Backend Setup:
+1. Install dependencies:
 cd backend
 npm install express prisma @prisma/client bcryptjs jsonwebtoken cors dotenv
 
