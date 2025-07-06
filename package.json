@@ -1,9 +1,19 @@
 {
+  "name": "fullstack-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && nodemon index.js",
+    "client": "cd frontend && npm run dev"
+  },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.10.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.3",
     "redux": "^5.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }
