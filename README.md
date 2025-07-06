@@ -6,7 +6,6 @@
 - **Database**: PostgreSQL + Prisma
 - **Auth**: JWT
 
-## Backend Setup
 1. Install dependencies:
 ```bash
 cd backend
