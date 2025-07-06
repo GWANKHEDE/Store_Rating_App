@@ -1,14 +1,11 @@
-// backend/src/controllers/storeController.js
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Add new store (admin only)
 const addStore = async (req, res) => {
   try {
     const { name, email, address, ownerId } = req.body;
 
-    // Validate inputs
     if (name.length < 2 || name.length > 60) {
       return res.status(400).json({ error: 'Name must be between 2 and 60 characters' });
     }
@@ -16,19 +13,16 @@ const addStore = async (req, res) => {
       return res.status(400).json({ error: 'Address must be less than 400 characters' });
     }
 
-    // Check if owner exists and is a store owner
     const owner = await prisma.user.findUnique({ where: { id: ownerId } });
     if (!owner || owner.role !== 'STORE_OWNER') {
       return res.status(400).json({ error: 'Owner must be an existing store owner' });
     }
 
-    // Check if store email already exists
     const existingStore = await prisma.store.findUnique({ where: { email } });
     if (existingStore) {
       return res.status(400).json({ error: 'Store email already in use' });
     }
 
-    // Create store
     const store = await prisma.store.create({
       data: {
         name,
@@ -53,7 +47,6 @@ const addStore = async (req, res) => {
   }
 };
 
-// Get all stores
 const getAllStores = async (req, res) => {
   try {
     const { name, address } = req.query;
@@ -75,13 +68,11 @@ const getAllStores = async (req, res) => {
       }
     });
 
-    // Calculate average rating for each store
     const storesWithRatings = stores.map(store => {
       const ratings = store.ratings.map(r => r.value);
       const avgRating = ratings.length > 0 ? 
         (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
       
-      // Check if current user has rated this store
       let userRating = null;
       if (req.user) {
         const userRatingObj = store.ratings.find(r => r.userId === req.user.id);
@@ -108,7 +99,6 @@ const getAllStores = async (req, res) => {
   }
 };
 
-// Get store by ID
 const getStoreById = async (req, res) => {
   try {
     const storeId = parseInt(req.params.id);
@@ -140,7 +130,6 @@ const getStoreById = async (req, res) => {
       return res.status(404).json({ error: 'Store not found' });
     }
 
-    // Calculate average rating
     const ratings = store.ratings.map(r => r.value);
     const avgRating = ratings.length > 0 ? 
       (ratings.reduce((a, b) => a + b, 0) / ratings.length) : 0;
@@ -160,24 +149,20 @@ const getStoreById = async (req, res) => {
   }
 };
 
-// Submit or update rating
 const submitRating = async (req, res) => {
   try {
     const { storeId, value } = req.body;
     const userId = req.user.id;
 
-    // Validate rating value
     if (value < 1 || value > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
 
-    // Check if store exists
     const store = await prisma.store.findUnique({ where: { id: storeId } });
     if (!store) {
       return res.status(404).json({ error: 'Store not found' });
     }
 
-    // Check if user already rated this store
     const existingRating = await prisma.rating.findUnique({
       where: {
         userId_storeId: {
@@ -189,7 +174,6 @@ const submitRating = async (req, res) => {
 
     let rating;
     if (existingRating) {
-      // Update existing rating
       rating = await prisma.rating.update({
         where: {
           userId_storeId: {
@@ -208,7 +192,6 @@ const submitRating = async (req, res) => {
         }
       });
     } else {
-      // Create new rating
       rating = await prisma.rating.create({
         data: {
           value,
@@ -232,7 +215,6 @@ const submitRating = async (req, res) => {
   }
 };
 
-// Get dashboard stats (admin only)
 const getDashboardStats = async (req, res) => {
   try {
     const totalUsers = await prisma.user.count();
@@ -249,12 +231,10 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-// Get store owner dashboard
 const getStoreOwnerDashboard = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get the store owned by this user
     const store = await prisma.store.findFirst({
       where: { ownerId: userId },
       include: {
@@ -276,7 +256,6 @@ const getStoreOwnerDashboard = async (req, res) => {
       return res.status(404).json({ error: 'No store found for this owner' });
     }
 
-    // Calculate average rating
     const ratings = store.ratings.map(r => r.value);
     const avgRating = ratings.length > 0 ? 
       (ratings.reduce((a, b) => a + b, 0) / ratings.length) : 0;

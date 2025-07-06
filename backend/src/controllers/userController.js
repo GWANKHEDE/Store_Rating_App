@@ -1,16 +1,13 @@
-// backend/src/controllers/userController.js
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// User registration
 const register = async (req, res) => {
   try {
     const { name, email, password, address, role = 'USER' } = req.body;
 
-    // Validate inputs
     if (name.length < 20 || name.length > 60) {
       return res.status(400).json({ error: 'Name must be between 20 and 60 characters' });
     }
@@ -24,16 +21,13 @@ const register = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already in use' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -51,7 +45,6 @@ const register = async (req, res) => {
       }
     });
 
-    // Generate token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({ user, token });
@@ -60,24 +53,20 @@ const register = async (req, res) => {
   }
 };
 
-// User login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.json({ 
@@ -95,25 +84,21 @@ const login = async (req, res) => {
   }
 };
 
-// Change password
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
-    // Find user
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    // Validate new password
     if (newPassword.length < 8 || newPassword.length > 16 || 
         !/[A-Z]/.test(newPassword) || !/[!@#$%^&*]/.test(newPassword)) {
       return res.status(400).json({ 
@@ -121,10 +106,8 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
     await prisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword }
@@ -136,7 +119,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-// Get all users (admin only)
 const getAllUsers = async (req, res) => {
   try {
     const { name, email, address, role } = req.query;
@@ -169,7 +151,6 @@ const getAllUsers = async (req, res) => {
       }
     });
 
-    // Calculate average rating for store owners
     const usersWithRatings = users.map(user => {
       if (user.role === 'STORE_OWNER' && user.stores.length > 0) {
         const store = user.stores[0];
@@ -187,7 +168,6 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// Get user by ID (admin only)
 const getUserById = async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -217,7 +197,6 @@ const getUserById = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Calculate average rating if store owner
     if (user.role === 'STORE_OWNER' && user.stores.length > 0) {
       const store = user.stores[0];
       const ratings = store.ratings.map(r => r.value);
